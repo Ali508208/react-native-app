@@ -77,9 +77,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.myapp"
+    namespace "com.youtube.baniya"
     defaultConfig {
-        applicationId "com.myapp"
+        applicationId "com.youtube.baniya"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
@@ -117,3 +117,6 @@ dependencies {
         implementation jscFlavor
     }
 }
+
+// Copy react-native-vector-icons font files into the APK assets
+apply from: "../../node_modules/react-native-vector-icons/fonts.gradle"

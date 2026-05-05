@@ -1,6 +1,7 @@
 import React from 'react';
 import { StatusBar } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import Toast from 'react-native-toast-message';
 
 import { useAuthPresenter } from './src/mvp/presenter/useAuthPresenter';
 import { HomeScreen } from './src/mvp/views/HomeScreen';
@@ -33,6 +34,8 @@ function App() {
           onSubmit={authPresenter.submit}
         />
       )}
+      {/* Toast must be the last child so it renders above everything */}
+      <Toast />
     </SafeAreaProvider>
   );
 }

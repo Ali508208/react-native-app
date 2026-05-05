@@ -1,9 +1,19 @@
-import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useRef, useState } from 'react';
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Feather from 'react-native-vector-icons/Feather';
 
 import type { User } from '../model/User';
+import { SideDrawer, type DrawerMenuItem, type SideDrawerHandle } from '../components/SideDrawer';
+import { toast } from '../utils/toast';
 import { palette, spacing } from '../theme/theme';
 
 type HomeScreenProps = {
@@ -11,60 +21,194 @@ type HomeScreenProps = {
   onLogout: () => void;
 };
 
+const QUICK_ACTIONS = [
+  { id: 'dashboard', icon: 'grid', label: 'Dashboard', color: '#3b82f6' },
+  { id: 'alerts', icon: 'bell', label: 'Alerts', color: '#8b5cf6' },
+  { id: 'profile', icon: 'user', label: 'Profile', color: '#10b981' },
+  { id: 'settings', icon: 'settings', label: 'Settings', color: '#f59e0b' },
+] as const;
+
+const ACTIVITY_ITEMS = [
+  { icon: 'log-in', label: 'Signed in successfully', time: 'Just now' },
+  { icon: 'shield', label: 'Account verified', time: '2h ago' },
+  { icon: 'settings', label: 'Profile updated', time: 'Yesterday' },
+] as const;
+
 export function HomeScreen({ user, onLogout }: HomeScreenProps) {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const drawerRef = useRef<SideDrawerHandle>(null);
+  const { width } = useWindowDimensions();
+
+  // Responsive: on small phones tighten padding
+  const isSmall = width < 360;
+  const pad = isSmall ? spacing.md : spacing.lg;
+
+  const menuItems: DrawerMenuItem[] = [
+    {
+      id: 'dashboard',
+      icon: 'grid',
+      label: 'Dashboard',
+      onPress: () => toast.success('Dashboard', "You're already on the dashboard"),
+    },
+    {
+      id: 'notifications',
+      icon: 'bell',
+      label: 'Notifications',
+      badge: 3,
+      onPress: () => toast.info('Notifications', 'You have 3 unread notifications'),
+    },
+    {
+      id: 'profile',
+      icon: 'user',
+      label: 'My Profile',
+      onPress: () => toast.info('Profile', 'Profile settings coming soon'),
+    },
+    {
+      id: 'settings',
+      icon: 'settings',
+      label: 'Settings',
+      onPress: () => toast.info('Settings', 'Settings coming soon'),
+    },
+    {
+      id: 'help',
+      icon: 'help-circle',
+      label: 'Help & Support',
+      onPress: () => toast.info('Help', 'Contact us at help@myapp.com'),
+    },
+  ];
+
+  const initials = user.displayName
+    .split(' ')
+    .slice(0, 2)
+    .map(w => w.charAt(0))
+    .join('')
+    .toUpperCase();
+
   return (
     <SafeAreaView edges={['top', 'left', 'right', 'bottom']} style={styles.safeArea}>
-      <View style={styles.container}>
-        <View style={styles.heroCard}>
-          <View style={styles.heroTopRow}>
-            <View>
-              <Text style={styles.heroLabel}>Home</Text>
-              <Text style={styles.heroTitle}>Hello, {user.displayName}</Text>
-            </View>
-            <View style={styles.avatarBadge}>
-              <Text style={styles.avatarText}>{user.displayName.charAt(0)}</Text>
+      {/* ── Header ── */}
+      <View style={[styles.header, { paddingHorizontal: pad }]}>
+        <Pressable
+          accessibilityLabel="Open menu"
+          hitSlop={14}
+          onPress={() => setDrawerOpen(true)}
+          style={styles.headerBtn}>
+          <Feather color={palette.white} name="menu" size={20} />
+        </Pressable>
+
+        <Text style={styles.headerTitle}>Home</Text>
+
+        <Pressable
+          accessibilityLabel="Notifications"
+          hitSlop={14}
+          onPress={() => toast.info('Notifications', 'You have 3 new notifications')}
+          style={styles.headerBtn}>
+          <View>
+            <Feather color={palette.white} name="bell" size={20} />
+            <View style={styles.notifBadge}>
+              <Text style={styles.notifBadgeText}>3</Text>
             </View>
           </View>
-
-          <Text style={styles.heroSubtitle}>
-            Your session is active. This home screen is connected to a lightweight MVP auth presenter.
-          </Text>
-
-          <View style={styles.summaryRow}>
-            <View style={styles.summaryCard}>
-              <Feather color={palette.homeAccent} name="mail" size={18} />
-              <Text style={styles.summaryLabel}>Signed in with</Text>
-              <Text style={styles.summaryValue}>{user.email}</Text>
-            </View>
-
-            <View style={styles.summaryCard}>
-              <Feather color={palette.homeAccent} name="clock" size={18} />
-              <Text style={styles.summaryLabel}>Last login</Text>
-              <Text style={styles.summaryValue}>{user.lastLoginLabel}</Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.taskCard}>
-          <Text style={styles.taskTitle}>Today’s focus</Text>
-          <Text style={styles.taskBody}>
-            Keep this as your base home view, then swap the mocked metrics with API data or persistent auth state.
-          </Text>
-          <View style={styles.tagRow}>
-            <View style={styles.tag}>
-              <Text style={styles.tagText}>MVP structure</Text>
-            </View>
-            <View style={styles.tag}>
-              <Text style={styles.tagText}>Ready to extend</Text>
-            </View>
-          </View>
-        </View>
-
-        <Pressable onPress={onLogout} style={({ pressed }) => [styles.logoutButton, pressed && styles.logoutButtonPressed]}>
-          <Feather color={palette.homeBackground} name="log-out" size={18} />
-          <Text style={styles.logoutButtonText}>Log out</Text>
         </Pressable>
       </View>
+
+      {/* ── Scrollable body ── */}
+      <ScrollView
+        contentContainerStyle={[styles.body, { padding: pad, paddingBottom: pad + spacing.lg }]}
+        showsVerticalScrollIndicator={false}>
+        {/* Welcome card */}
+        <View style={styles.welcomeCard}>
+          <View style={styles.welcomeRow}>
+            <View style={styles.welcomeTextBlock}>
+              <Text style={styles.welcomeHi}>Hello,</Text>
+              <Text style={styles.welcomeName} numberOfLines={1}>
+                {user.displayName}
+              </Text>
+            </View>
+            <View style={styles.avatarCircle}>
+              <Text style={styles.avatarText}>{initials}</Text>
+            </View>
+          </View>
+
+          <Text style={styles.welcomeDesc}>
+            Your session is active. Use the menu to navigate your account.
+          </Text>
+
+          <View style={styles.sessionChipRow}>
+            <View style={styles.sessionChip}>
+              <Feather color={palette.homeAccent} name="mail" size={13} />
+              <Text style={styles.sessionChipText} numberOfLines={1}>
+                {user.email}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Last login info bar */}
+        <View style={styles.infoBar}>
+          <View style={styles.infoBarLeft}>
+            <Feather color={palette.homeAccent} name="clock" size={16} />
+            <View>
+              <Text style={styles.infoBarLabel}>Last login</Text>
+              <Text style={styles.infoBarValue}>{user.lastLoginLabel}</Text>
+            </View>
+          </View>
+          <View style={styles.onlinePill}>
+            <View style={styles.onlineDot} />
+            <Text style={styles.onlineLabel}>Online</Text>
+          </View>
+        </View>
+
+        {/* Quick actions 2-column grid (twrnc style: flex-wrap + flexBasis) */}
+        <Text style={styles.sectionTitle}>Quick Actions</Text>
+        <View style={styles.actionsGrid}>
+          {QUICK_ACTIONS.map(action => (
+            <Pressable
+              key={action.id}
+              onPress={() => toast.info(action.label, `${action.label} coming soon`)}
+              style={({ pressed }) => [
+                styles.actionCard,
+                // Responsive: on small phones take full width
+                isSmall && styles.actionCardSmall,
+                pressed && styles.actionCardPressed,
+              ]}>
+              <View style={[styles.actionIconBox, { backgroundColor: action.color + '22' }]}>
+                <Feather color={action.color} name={action.icon} size={22} />
+              </View>
+              <Text style={styles.actionLabel}>{action.label}</Text>
+            </Pressable>
+          ))}
+        </View>
+
+        {/* Recent activity */}
+        <Text style={styles.sectionTitle}>Recent Activity</Text>
+        {ACTIVITY_ITEMS.map((item, i) => (
+          <View key={i} style={styles.activityRow}>
+            <View style={styles.activityIconBox}>
+              <Feather color={palette.homeAccent} name={item.icon} size={15} />
+            </View>
+            <View style={styles.activityBody}>
+              <Text style={styles.activityLabel}>{item.label}</Text>
+              <Text style={styles.activityTime}>{item.time}</Text>
+            </View>
+            <Feather color="#1e3a5f" name="chevron-right" size={14} />
+          </View>
+        ))}
+      </ScrollView>
+
+      {/* ── Side Drawer (Modal overlay) ── */}
+      <Modal
+        transparent
+        visible={drawerOpen}
+        onRequestClose={() => drawerRef.current?.close()}>
+        <SideDrawer
+          ref={drawerRef}
+          menuItems={menuItems}
+          user={user}
+          onClose={() => setDrawerOpen(false)}
+          onLogout={onLogout}
+        />
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -74,124 +218,251 @@ const styles = StyleSheet.create({
     backgroundColor: palette.homeBackground,
     flex: 1,
   },
-  container: {
-    flex: 1,
-    padding: spacing.lg,
-  },
-  heroCard: {
-    backgroundColor: palette.homeCard,
-    borderColor: '#223053',
-    borderRadius: 30,
-    borderWidth: 1,
-    padding: spacing.lg,
-  },
-  heroTopRow: {
+  // Header
+  header: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: spacing.md,
+    paddingVertical: spacing.md,
   },
-  heroLabel: {
-    color: '#9bb0d1',
-    fontSize: 13,
-    fontWeight: '700',
-    marginBottom: spacing.xs,
-    textTransform: 'uppercase',
-  },
-  heroTitle: {
-    color: palette.white,
-    fontSize: 28,
-    fontWeight: '800',
-  },
-  avatarBadge: {
+  headerBtn: {
     alignItems: 'center',
-    backgroundColor: '#233252',
-    borderRadius: 24,
-    height: 48,
+    backgroundColor: '#1a2840',
+    borderRadius: 14,
+    height: 44,
     justifyContent: 'center',
-    width: 48,
+    width: 44,
   },
-  avatarText: {
+  headerTitle: {
     color: palette.white,
-    fontSize: 18,
+    fontSize: 17,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+  },
+  notifBadge: {
+    alignItems: 'center',
+    backgroundColor: '#ef4444',
+    borderRadius: 999,
+    height: 15,
+    justifyContent: 'center',
+    minWidth: 15,
+    position: 'absolute',
+    right: -5,
+    top: -5,
+  },
+  notifBadgeText: {
+    color: '#fff',
+    fontSize: 8,
     fontWeight: '800',
   },
-  heroSubtitle: {
-    color: '#d1d8e8',
-    fontSize: 15,
-    lineHeight: 22,
-    marginBottom: spacing.lg,
+  // Body
+  body: {
+    flexGrow: 1,
   },
-  summaryRow: {
-    gap: spacing.md,
-  },
-  summaryCard: {
-    backgroundColor: '#17233f',
-    borderRadius: 22,
-    gap: spacing.xs,
-    padding: spacing.md,
-  },
-  summaryLabel: {
-    color: '#93a4c5',
-    fontSize: 12,
-    fontWeight: '600',
-    marginTop: 4,
-  },
-  summaryValue: {
-    color: palette.white,
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  taskCard: {
-    backgroundColor: '#f5efe5',
+  // Welcome card
+  welcomeCard: {
+    backgroundColor: palette.homeCard,
+    borderColor: '#1f3052',
     borderRadius: 28,
-    marginTop: spacing.lg,
+    borderWidth: 1,
+    marginBottom: spacing.md,
     padding: spacing.lg,
   },
-  taskTitle: {
-    color: palette.text,
-    fontSize: 22,
-    fontWeight: '800',
+  welcomeRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginBottom: spacing.sm,
   },
-  taskBody: {
-    color: palette.textMuted,
-    fontSize: 15,
-    lineHeight: 22,
+  welcomeTextBlock: {
+    flex: 1,
+    marginRight: spacing.md,
   },
-  tagRow: {
+  welcomeHi: {
+    color: '#7a94b8',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    marginBottom: 2,
+    textTransform: 'uppercase',
+  },
+  welcomeName: {
+    color: palette.white,
+    fontSize: 26,
+    fontWeight: '800',
+    lineHeight: 30,
+  },
+  avatarCircle: {
+    alignItems: 'center',
+    backgroundColor: '#1e3a5f',
+    borderColor: palette.homeAccent,
+    borderRadius: 30,
+    borderWidth: 2,
+    height: 58,
+    justifyContent: 'center',
+    width: 58,
+  },
+  avatarText: {
+    color: palette.homeAccent,
+    fontSize: 21,
+    fontWeight: '800',
+  },
+  welcomeDesc: {
+    color: '#7a94b8',
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: spacing.md,
+  },
+  sessionChipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  sessionChip: {
+    alignItems: 'center',
+    backgroundColor: '#17233f',
+    borderRadius: 999,
+    flexDirection: 'row',
+    flexShrink: 1,
+    gap: 6,
+    maxWidth: '100%',
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+  },
+  sessionChipText: {
+    color: '#7a94b8',
+    flexShrink: 1,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  // Info bar
+  infoBar: {
+    alignItems: 'center',
+    backgroundColor: '#111c35',
+    borderColor: '#1f3052',
+    borderRadius: 22,
+    borderWidth: 1,
     flexDirection: 'row',
     gap: spacing.sm,
-    marginTop: spacing.lg,
+    justifyContent: 'space-between',
+    marginBottom: spacing.lg,
+    padding: spacing.md,
   },
-  tag: {
-    backgroundColor: palette.surfaceMuted,
+  infoBarLeft: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flex: 1,
+    gap: spacing.sm,
+  },
+  infoBarLabel: {
+    color: '#4e6480',
+    fontSize: 11,
+    fontWeight: '700',
+    marginBottom: 1,
+    textTransform: 'uppercase',
+  },
+  infoBarValue: {
+    color: '#e2e8f0',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  onlinePill: {
+    alignItems: 'center',
+    backgroundColor: '#0a2b1c',
     borderRadius: 999,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
+    flexDirection: 'row',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
-  tagText: {
-    color: palette.primaryDark,
+  onlineDot: {
+    backgroundColor: '#34d399',
+    borderRadius: 999,
+    height: 7,
+    width: 7,
+  },
+  onlineLabel: {
+    color: '#34d399',
     fontSize: 12,
     fontWeight: '700',
   },
-  logoutButton: {
+  // Section title
+  sectionTitle: {
+    color: '#4e6480',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    marginBottom: spacing.sm,
+    textTransform: 'uppercase',
+  },
+  // Quick actions grid
+  actionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  actionCard: {
     alignItems: 'center',
-    alignSelf: 'flex-start',
-    backgroundColor: palette.white,
+    backgroundColor: '#111c35',
+    borderColor: '#1f3052',
+    borderRadius: 22,
+    borderWidth: 1,
+    // ~47% so two per row with gap
+    flexBasis: '47%',
+    flexGrow: 1,
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
+  actionCardSmall: {
+    flexBasis: '100%',
+  },
+  actionCardPressed: {
+    opacity: 0.75,
+    transform: [{ scale: 0.97 }],
+  },
+  actionIconBox: {
+    alignItems: 'center',
+    borderRadius: 16,
+    height: 52,
+    justifyContent: 'center',
+    width: 52,
+  },
+  actionLabel: {
+    color: '#cbd5e1',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  // Activity feed
+  activityRow: {
+    alignItems: 'center',
+    backgroundColor: '#111c35',
+    borderColor: '#1f3052',
     borderRadius: 18,
+    borderWidth: 1,
     flexDirection: 'row',
     gap: spacing.sm,
-    marginTop: 'auto',
-    minHeight: 54,
-    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.sm,
+    padding: spacing.md,
   },
-  logoutButtonPressed: {
-    opacity: 0.88,
+  activityIconBox: {
+    alignItems: 'center',
+    backgroundColor: '#1e3a5f',
+    borderRadius: 12,
+    height: 38,
+    justifyContent: 'center',
+    width: 38,
   },
-  logoutButtonText: {
-    color: palette.homeBackground,
-    fontSize: 15,
-    fontWeight: '700',
+  activityBody: {
+    flex: 1,
+  },
+  activityLabel: {
+    color: '#e2e8f0',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  activityTime: {
+    color: '#3d5270',
+    fontSize: 12,
+    marginTop: 2,
   },
 });

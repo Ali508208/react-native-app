@@ -14,8 +14,8 @@ function buildDisplayName(email: string) {
 }
 
 export function useAuthPresenter() {
-  const [email, setEmail] = useState('alex.morgan@company.com');
-  const [password, setPassword] = useState('Passw0rd!');
+  const [email, setEmail] = useState('alihamxa300@gmail.com');
+  const [password, setPassword] = useState('123456');
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [user, setUser] = useState<User | null>(null);
