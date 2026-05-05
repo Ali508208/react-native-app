@@ -1,45 +1,40 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+import React from 'react';
+import { StatusBar } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { NewAppScreen } from '@react-native/new-app-screen';
-import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
-import {
-  SafeAreaProvider,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+import { useAuthPresenter } from './src/mvp/presenter/useAuthPresenter';
+import { HomeScreen } from './src/mvp/views/HomeScreen';
+import { LoginScreen } from './src/mvp/views/LoginScreen';
 
 function App() {
-  const isDarkMode = useColorScheme() === 'dark';
+  const authPresenter = useAuthPresenter();
 
   return (
     <SafeAreaProvider>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <AppContent />
+      <StatusBar
+        barStyle={authPresenter.user ? 'light-content' : 'dark-content'}
+        backgroundColor={authPresenter.user ? '#0f172a' : '#f4efe7'}
+      />
+      {authPresenter.user ? (
+        <HomeScreen
+          user={authPresenter.user}
+          onLogout={authPresenter.logout}
+        />
+      ) : (
+        <LoginScreen
+          email={authPresenter.email}
+          password={authPresenter.password}
+          errorMessage={authPresenter.errorMessage}
+          isPasswordVisible={authPresenter.isPasswordVisible}
+          isSubmitDisabled={authPresenter.isSubmitDisabled}
+          onChangeEmail={authPresenter.updateEmail}
+          onChangePassword={authPresenter.updatePassword}
+          onTogglePasswordVisibility={authPresenter.togglePasswordVisibility}
+          onSubmit={authPresenter.submit}
+        />
+      )}
     </SafeAreaProvider>
   );
 }
-
-function AppContent() {
-  const safeAreaInsets = useSafeAreaInsets();
-
-  return (
-    <View style={styles.container}>
-      <NewAppScreen
-        templateFileName="App.tsx"
-        safeAreaInsets={safeAreaInsets}
-      />
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});
 
 export default App;
